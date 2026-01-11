@@ -99,52 +99,6 @@ npm run build
 
 ## Project Structure
 
-### Key Directories
-
-- **app/Models/**: Data models (User, ImportJob, DatabaseConnection)
-- **app/Http/Controllers/**: Route controllers
-- **app/Services/Import/**: Import processing logic
-- **app/Providers/**: Service providers including ImportServiceProvider
-- **database/migrations/**: Database schema migrations
-- **resources/views/**: Blade templates for UI views
-- **resources/js/**: Vue.js components and JavaScript
-- **routes/**: API and web routes
-- **config/**: Application configuration files
-
-### Core Models
-
-#### DatabaseConnection
-Manages connections to external databases
-- Stores driver, host, port, credentials
-- Supports multiple database drivers
-- Soft deletes for data retention
-
-#### ImportJob
-Tracks individual import operations
-- File metadata and location
-- Column mappings and import settings
-- Progress tracking (total, processed, successful, failed rows)
-- Status management (pending, processing, completed, failed)
-
-#### User
-Standard Laravel user model with authentication
-
-## Database Migrations
-
-### Available Migrations
-- `create_users_table`: User authentication
-- `create_cache_table`: Cache storage
-- `create_jobs_table`: Job queue
-- `create_database_connections_table`: External database connections
-- `create_import_jobs_table`: Import job tracking
-
-## Configuration Files
-
-- **config/app.php**: Application settings
-- **config/excel.php**: Excel import/export configuration
-- **config/database.php**: Database connection configuration
-- **config/filesystems.php**: File storage configuration
-- **config/queue.php**: Job queue settings
 
 ## Usage
 
