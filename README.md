@@ -1,52 +1,228 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Custom File Importer
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A powerful Laravel-based application for importing data from Excel and CSV files into multiple databases with custom column mapping and flexible import settings.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Multi-Database Support**: Connect to and import data into multiple databases simultaneously
+- **Flexible File Import**: Support for Excel and CSV file formats
+- **Custom Column Mapping**: Map file columns to database table columns with full control
+- **Database Connection Management**: Securely store and manage multiple database connections
+- **Import Job Tracking**: Monitor import progress with detailed status tracking
+- **Error Handling**: Comprehensive error reporting and failed row tracking
+- **User Authentication**: Built-in user authentication and authorization
+- **Responsive UI**: Modern, responsive web interface for easy data imports
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Backend**: Laravel 12.x
+- **Frontend**: Vue.js with Vite
+- **Database**: MySQL/PostgreSQL (configurable)
+- **File Processing**: Maatwebsite Excel 3.1, Box Spout
+- **PHP**: 8.2+
 
-## Learning Laravel
+## Requirements
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- PHP 8.2 or higher
+- Composer
+- Node.js 18+ (for frontend development)
+- MySQL or PostgreSQL
+- XAMPP or similar PHP development environment
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Installation
 
-## Laravel Sponsors
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd Custom-File-Importer
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 2. Install PHP Dependencies
+```bash
+composer install
+```
 
-### Premium Partners
+### 3. Install JavaScript Dependencies
+```bash
+npm install
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 4. Environment Setup
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## Contributing
+### 5. Configure Your Database
+Edit the `.env` file and configure your primary database connection:
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=custom_file_importer
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 6. Run Database Migrations
+```bash
+php artisan migrate
+```
 
-## Code of Conduct
+### 7. Seed Database (Optional)
+```bash
+php artisan db:seed
+```
+
+## Running the Application
+
+### Development Mode
+
+Open two terminal windows and run:
+
+**Terminal 1: Start Laravel Development Server**
+```bash
+php artisan serve
+```
+
+**Terminal 2: Start Vite Development Server**
+```bash
+npm run dev
+```
+
+The application will be available at `http://localhost:8000`
+
+### Production Build
+```bash
+npm run build
+```
+
+## Project Structure
+
+### Key Directories
+
+- **app/Models/**: Data models (User, ImportJob, DatabaseConnection)
+- **app/Http/Controllers/**: Route controllers
+- **app/Services/Import/**: Import processing logic
+- **app/Providers/**: Service providers including ImportServiceProvider
+- **database/migrations/**: Database schema migrations
+- **resources/views/**: Blade templates for UI views
+- **resources/js/**: Vue.js components and JavaScript
+- **routes/**: API and web routes
+- **config/**: Application configuration files
+
+### Core Models
+
+#### DatabaseConnection
+Manages connections to external databases
+- Stores driver, host, port, credentials
+- Supports multiple database drivers
+- Soft deletes for data retention
+
+#### ImportJob
+Tracks individual import operations
+- File metadata and location
+- Column mappings and import settings
+- Progress tracking (total, processed, successful, failed rows)
+- Status management (pending, processing, completed, failed)
+
+#### User
+Standard Laravel user model with authentication
+
+## Database Migrations
+
+### Available Migrations
+- `create_users_table`: User authentication
+- `create_cache_table`: Cache storage
+- `create_jobs_table`: Job queue
+- `create_database_connections_table`: External database connections
+- `create_import_jobs_table`: Import job tracking
+
+## Configuration Files
+
+- **config/app.php**: Application settings
+- **config/excel.php**: Excel import/export configuration
+- **config/database.php**: Database connection configuration
+- **config/filesystems.php**: File storage configuration
+- **config/queue.php**: Job queue settings
+
+## Usage
+
+### Creating a Database Connection
+1. Navigate to the connections management page
+2. Enter connection details (driver, host, port, credentials)
+3. Test the connection
+4. Save the configuration
+
+### Importing Data
+1. Select a file (Excel/CSV)
+2. Choose the target database connection
+3. Select the target table
+4. Map columns from your file to database fields
+5. Configure import settings
+6. Start the import job
+7. Monitor progress on the import tracking page
+
+## API Endpoints
+
+The application includes RESTful API endpoints for:
+- Database connection management
+- Import job creation and status
+- File uploads
+- Column mapping validation
+
+## Testing
+
+Run tests with:
+```bash
+php artisan test
+```
+
+Run specific test file:
+```bash
+php artisan test tests/Feature/ExampleTest.php
+```
+
+## Troubleshooting
+
+### Database Connection Issues
+- Verify your `.env` database configuration
+- Ensure database server is running
+- Check database user permissions
+
+### File Upload Issues
+- Verify file size limits in `php.ini`
+- Check storage directory permissions
+- Ensure supported file format (Excel/CSV)
+
+### Import Failures
+- Check the error message in the import job details
+- Verify column mappings are correct
+- Ensure data types match target database columns
+
+## Development
+
+### Code Style
+The project uses Laravel Pint for code formatting:
+```bash
+./vendor/bin/pint
+```
+
+### Running Database Migrations
+```bash
+# Create new migration
+php artisan make:migration migration_name
+
+# Rollback migrations
+php artisan migrate:rollback
+
+# Reset database
+php artisan migrate:reset
+```
+
+## License
+
+This project is licensed under the MIT License.
 
 In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
