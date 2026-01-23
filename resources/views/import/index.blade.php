@@ -7,8 +7,15 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="mb-0">CSV/Excel Import System</h4>
+                <h4 class="mb-0 d-flex justify-content-between align-items-center">
+                    <span>CSV/Excel Import System</span>
+                    <a href="{{ route('data.cleaning.index') }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-broom"></i> Clean Data First
+                    </a>
+                </h4>
+            </div>
                 </div>
+                
                 <div class="card-body">
                     <!-- Progress Steps -->
                     <div class="steps mb-5">
@@ -1059,6 +1066,22 @@
                 console.error('Error polling job status:', error);
             }
         }, 2000);
+    }
+
+
+    function useCleanedFile(cleanedFilePath, cleanedFileName) {
+        // Simulate file selection
+        uploadedFile = {
+            file_path: cleanedFilePath,
+            file_name: cleanedFileName,
+            file_type: cleanedFileName.split('.').pop().toLowerCase(),
+        };
+        
+        // Update UI
+        document.querySelector('.custom-file-label').textContent = cleanedFileName;
+        document.getElementById('file-preview').classList.add('d-none');
+        
+        alert('Cleaned file selected. Please proceed to column mapping.');
     }
 
     function viewJobDetails(jobId) {

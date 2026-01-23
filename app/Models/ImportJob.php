@@ -36,6 +36,30 @@ class ImportJob extends Model
         'completed_at' => 'datetime',
     ];
 
+    /**
+     * Check if this is a grouped import
+     */
+    public function isGroupedImport(): bool
+    {
+        return ($this->import_settings['is_grouped_import'] ?? false) === true;
+    }
+
+    /**
+     * Get the loan types for this grouped import
+     */
+    public function getLoanTypes(): array
+    {
+        return $this->import_settings['loan_types'] ?? [];
+    }
+
+    /**
+     * Get the total number of loan types in this grouped import
+     */
+    public function getLoanTypeCount(): int
+    {
+        return count($this->getLoanTypes());
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

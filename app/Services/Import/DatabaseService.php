@@ -299,9 +299,15 @@ class DatabaseService
             Config::set("database.connections.{$tempConnection}", null);
             
             \Log::info('Columns fetched successfully', ['count' => count($columns)]);
-            return array_filter($columns, function($col) {
-                return !empty($col['name']);
-            });
+            
+            // Extract just the column names for the frontend
+            $columnNames = array_map(function($col) {
+                return $col['name'];
+            }, $columns);
+            
+            \Log::info('Returning column names', ['columns' => $columnNames]);
+            
+            return $columnNames;
             
         } catch (\Exception $e) {
             \Log::error('Failed to fetch columns', [

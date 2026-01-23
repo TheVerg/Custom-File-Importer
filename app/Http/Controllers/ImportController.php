@@ -88,9 +88,13 @@ class ImportController extends Controller
 
     public function getTables(Request $request, DatabaseConnection $connection)
     {
+        // Handle both GET and POST requests
+        $database = $request->input('database');
+        
         \Log::info('Getting tables', [
             'connection_id' => $connection->id,
-            'database' => $request->database
+            'database' => $database,
+            'method' => $request->method()
         ]);
         
         $request->validate([
@@ -98,7 +102,7 @@ class ImportController extends Controller
         ]);
         
         try {
-            $tables = $this->databaseService->getTables($connection, $request->database);
+            $tables = $this->databaseService->getTables($connection, $database);
             \Log::info('Tables fetched successfully', ['count' => count($tables)]);
             
             return response()->json([
@@ -108,7 +112,7 @@ class ImportController extends Controller
         } catch (\Exception $e) {
             \Log::error('Failed to fetch tables', [
                 'connection_id' => $connection->id,
-                'database' => $request->database,
+                'database' => $database,
                 'error' => $e->getMessage()
             ]);
             
@@ -121,10 +125,15 @@ class ImportController extends Controller
 
     public function getColumns(Request $request, DatabaseConnection $connection)
     {
+        // Handle both GET and POST requests
+        $database = $request->input('database');
+        $table = $request->input('table');
+        
         \Log::info('Getting columns', [
             'connection_id' => $connection->id,
-            'database' => $request->database,
-            'table' => $request->table
+            'database' => $database,
+            'table' => $table,
+            'method' => $request->method()
         ]);
         
         $request->validate([
@@ -135,8 +144,8 @@ class ImportController extends Controller
         try {
             $columns = $this->databaseService->getTableColumns(
                 $connection,
-                $request->database,
-                $request->table
+                $database,
+                $table
             );
             
             \Log::info('Columns fetched successfully', ['count' => count($columns)]);
@@ -148,8 +157,8 @@ class ImportController extends Controller
         } catch (\Exception $e) {
             \Log::error('Failed to fetch columns', [
                 'connection_id' => $connection->id,
-                'database' => $request->database,
-                'table' => $request->table,
+                'database' => $database,
+                'table' => $table,
                 'error' => $e->getMessage()
             ]);
             

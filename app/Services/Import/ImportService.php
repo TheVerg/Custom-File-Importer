@@ -12,7 +12,7 @@ use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 class ImportService
 {
     private DatabaseService $databaseService;
-    private const BATCH_SIZE = 100;
+    private const BATCH_SIZE = 1000;
 
     public function __construct(DatabaseService $databaseService)
     {
@@ -32,6 +32,8 @@ class ImportService
         $batch = [];
         $successful = 0;
         $failed = 0;
+        $rowIndex = 0;
+        $totalRows = 0;
 
         try {
             // Setup database connection
@@ -39,65 +41,72 @@ class ImportService
             $config['database'] = $importJob->database_name;
             Config::set("database.connections.{$connectionName}", $config);
 
-            // Get file data
+            // Get file path
             $filePath = Storage::path($importJob->file_path);
-            $data = $this->readFile($filePath, $importJob->file_type);
             
-            Log::info('File read successfully', [
+            Log::info('Starting file processing', [
                 'job_id' => $importJob->id,
-                'total_rows' => count($data)
+                'file_type' => $importJob->file_type
             ]);
 
-            $importJob->update(['total_rows' => count($data)]);
-            
             // Start transaction
             DB::connection($connectionName)->beginTransaction();
 
             Log::debug('Starting row processing', [
                 'job_id' => $importJob->id,
-                'mappings' => $importJob->column_mappings,
-                'first_row_sample' => $data[0] ?? 'No data'
+                'mappings' => $importJob->column_mappings
             ]);
 
-            foreach ($data as $index => $row) {
-                try {
-                    Log::debug('Processing row', [
-                        'job_id' => $importJob->id,
-                        'row_index' => $index,
-                        'raw_row' => $row,
-                        'mappings' => $importJob->column_mappings
-                    ]);
-
-                    $mappedData = $this->mapRowData($row, $importJob->column_mappings);
+            // Process file in chunks to minimize memory usage
+            foreach ($this->readFileInChunks($filePath, $importJob->file_type, 500) as $chunk) {
+                foreach ($chunk as $row) {
+                    $rowIndex++;
+                    $totalRows++;
                     
-                    Log::debug('Mapped row data', [
-                        'job_id' => $importJob->id,
-                        'row_index' => $index,
-                        'mapped_data' => $mappedData
-                    ]);
-                    
-                    $batch[] = $mappedData;
+                    try {
+                        Log::debug('Processing row', [
+                            'job_id' => $importJob->id,
+                            'row_index' => $rowIndex,
+                            'raw_row' => $row,
+                            'mappings' => $importJob->column_mappings
+                        ]);
 
-                    // Process batch when size is reached
-                    if (count($batch) >= self::BATCH_SIZE) {
-                        $this->processBatch($connectionName, $importJob->table_name, $batch, $successful, $failed);
-                        $batch = [];
+                        $mappedData = $this->mapRowData($row, $importJob->column_mappings);
+                        
+                        Log::debug('Mapped row data', [
+                            'job_id' => $importJob->id,
+                            'row_index' => $rowIndex,
+                            'mapped_data' => $mappedData
+                        ]);
+                        
+                        $batch[] = $mappedData;
+
+                        // Process batch when size is reached
+                        if (count($batch) >= self::BATCH_SIZE) {
+                            $this->processBatch($connectionName, $importJob->table_name, $batch, $successful, $failed);
+                            $batch = [];
+                        }
+                    } catch (\Exception $e) {
+                        $failed++;
+                        Log::error("Row processing failed", [
+                            'job_id' => $importJob->id,
+                            'row_index' => $rowIndex,
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString()
+                        ]);
                     }
-                } catch (\Exception $e) {
-                    $failed++;
-                    Log::error("Row processing failed", [
-                        'job_id' => $importJob->id,
-                        'row_index' => $index,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                }
 
-                // Update progress periodically
-                if ($index % 10 === 0) {
-                    $this->updateProgress($importJob, $index + 1, $successful, $failed);
+                    // Update progress periodically
+                    if ($rowIndex % 10 === 0) {
+                        $this->updateProgress($importJob, $rowIndex, $successful, $failed);
+                    }
                 }
+                
+                // Garbage collection after each chunk
+                gc_collect_cycles();
             }
+
+            $importJob->update(['total_rows' => $totalRows]);
 
             // Process any remaining items in the batch
             if (!empty($batch)) {
@@ -296,10 +305,12 @@ class ImportService
 
 }
 
-private function readFile(string $filePath, string $fileType): array
+/**
+ * Read file in chunks to minimize memory usage
+ * Uses a generator to yield chunks of data
+ */
+private function readFileInChunks(string $filePath, string $fileType, int $chunkSize = 500): \Generator
 {
-    $data = [];
-    
     if ($fileType === 'csv') {
         $reader = ReaderEntityFactory::createCSVReader();
         $reader->setFieldDelimiter(',');
@@ -311,6 +322,8 @@ private function readFile(string $filePath, string $fileType): array
     $reader->open($filePath);
     
     $headers = [];
+    $chunk = [];
+    $rowsInChunk = 0;
     
     foreach ($reader->getSheetIterator() as $sheet) {
         foreach ($sheet->getRowIterator() as $rowIndex => $row) {
@@ -331,12 +344,38 @@ private function readFile(string $filePath, string $fileType): array
                 $rowData[$header] = $cell->getValue();
             }
             
-            $data[] = $rowData;
+            $chunk[] = $rowData;
+            $rowsInChunk++;
+            
+            // Yield chunk when size is reached
+            if ($rowsInChunk >= $chunkSize) {
+                yield $chunk;
+                $chunk = [];
+                $rowsInChunk = 0;
+            }
         }
         break; // Only process first sheet
     }
     
+    // Yield remaining rows
+    if (!empty($chunk)) {
+        yield $chunk;
+    }
+    
     $reader->close();
+}
+
+/**
+ * Legacy method - kept for backwards compatibility
+ * Reads entire file into memory
+ */
+private function readFile(string $filePath, string $fileType): array
+{
+    $data = [];
+    
+    foreach ($this->readFileInChunks($filePath, $fileType, 5000) as $chunk) {
+        $data = array_merge($data, $chunk);
+    }
     
     return $data;
 }
